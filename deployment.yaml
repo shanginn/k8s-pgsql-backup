@@ -15,5 +15,5 @@ spec:
     spec:
       containers:
         - name: test-container
-          image: bash:latest
+          image: ghcr.io/shanginn/k8s-pgsql-backup:latest
           command: ["sleep", "infinity"]  # Just to keep the container running
