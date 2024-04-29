@@ -3,7 +3,7 @@ imagePullSecrets:
 
 image:
   repository: ghcr.io/shanginn/k8s-pgsql-backup
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: latest
 
 serviceAccount:
