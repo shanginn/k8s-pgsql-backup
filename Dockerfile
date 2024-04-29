@@ -1,7 +1,7 @@
 FROM debian:stable-slim
 
 RUN apt-get update && \
-    apt-get install -y postgresql-common gnupg && \
+    apt-get install -y postgresql-common gnupg curl && \
     /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y && \
     apt-get install postgresql-15 -y && \
     apt-get clean
