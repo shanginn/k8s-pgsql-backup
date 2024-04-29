@@ -14,7 +14,7 @@ spec:
         spec:
           containers:
             - name: postgresql-backup
-              image: your-registry/my-script-image:latest
+              image: ghcr.io/shanginn/k8s-pgsql-backup:latest
               command: ["run-pgsql-backup"]
               imagePullPolicy: "IfNotPresent"
               env:

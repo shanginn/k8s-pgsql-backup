@@ -16,4 +16,16 @@ spec:
       containers:
         - name: test-container
           image: ghcr.io/shanginn/k8s-pgsql-backup:latest
-          command: ["sleep", "infinity"]  # Just to keep the container running
+          command: ["sleep", "infinity"]
+          env:
+            - name: PGUSER
+              value: postgres
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: creds
+                  key: postgres-password
+            - name: PGHOST
+              value: pgsql-postgresql
+            - name: PGPORT
+              value: "5432"
