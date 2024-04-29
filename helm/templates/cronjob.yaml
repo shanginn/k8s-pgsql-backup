@@ -1,33 +1,32 @@
-# tem disable
-{{- if false }}
+{{- range .Values.databases }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: {{ include "pgsql-backup.fullname" . }}
+  name: {{ include "pgsql-backup.fullname" . }}-{{ .name }}
   labels:
-    {{- include "pgsql-backup.labels" . | nindent 4 }}
+    {{- include "pgsql-backup.labels" $ | nindent 4 }}
 spec:
   concurrencyPolicy: Allow
   failedJobsHistoryLimit: 10
   successfulJobsHistoryLimit: 3
-  schedule: "0 7,19 * * *" # every 12 hours
+  schedule: "{{ .schedule }}"
   jobTemplate:
     metadata:
       labels:
-        {{- include "pgsql-backup.selectorLabels" . | nindent 8 }}
+        {{- include "pgsql-backup.selectorLabels" $ | nindent 8 }}
     spec:
       template:
         spec:
-          serviceAccountName: {{ include "pgsql-backup.serviceAccountName" . }}
-          {{- with .Values.imagePullSecrets }}
+          serviceAccountName: {{ include "pgsql-backup.serviceAccountName" $ }}
+          {{- with $.Values.imagePullSecrets }}
           imagePullSecrets:
-                {{- toYaml . | nindent 8 }}
-              {{- end }}
+            {{- toYaml . | nindent 8 }}
+          {{- end }}
           containers:
-            - name: {{ .Chart.Name }}
-              image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-              command: ["run-pgsql-backup"]
-              imagePullPolicy: {{ .Values.image.pullPolicy }}
+            - name: {{ $.Chart.Name }}-{{ .name }}
+              image: "{{ $.Values.image.repository }}:{{ $.Values.image.tag | default $.Chart.AppVersion }}"
+              command: ["run-pgsql-backup", "{{ .name }}"]
+              imagePullPolicy: {{ $.Values.image.pullPolicy }}
               env:
                 - name: PGPASSWORD
                   valueFrom:
@@ -36,8 +35,9 @@ spec:
                       key: postgres-password
               envFrom:
                 - configMapRef:
-                    name: {{ include "pgsql-backup.fullname" . }}-env
+                    name: {{ include "pgsql-backup.fullname" $ }}-env
                 - secretRef:
-                    name: {{ include "pgsql-backup.fullname" . }}-secret
+                    name: {{ include "pgsql-backup.fullname" $ }}-secret
           restartPolicy: OnFailure
-{{end}}
+---
+{{- end }}

@@ -1,3 +1,11 @@
+databases:
+  - name: generach
+    schedule: "0 7,19 * * *" # every 12 hours
+  - name: sistent
+    schedule: "0 0 * * *" # every 24 hours
+
+enableTestPod: false
+
 imagePullSecrets:
   - name: dockerconfigjson-github-com
 

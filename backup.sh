@@ -1,5 +1,5 @@
 #!/bin/bash
-set -ex
+set -e
 
 export RCLONE_CONFIG_CLOUDFLARE_TYPE=s3
 export RCLONE_CONFIG_CLOUDFLARE_PROVIDER=Cloudflare

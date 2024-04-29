@@ -1,3 +1,4 @@
+{{ if .Values.enableTestPod }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,3 +35,4 @@ spec:
                 name: {{ include "pgsql-backup.fullname" . }}-env
             - secretRef:
                 name: {{ include "pgsql-backup.fullname" . }}-secret
+{{ end }}
