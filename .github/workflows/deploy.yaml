@@ -68,4 +68,3 @@ jobs:
             --set=envSecrets.CLOUDFLARE_API_TOKEN="$CLOUDFLARE_API_TOKEN" \
             --set=envSecrets.CLOUDFLARE_SECRET_ACCESS_KEY="$CLOUDFLARE_SECRET_ACCESS_KEY" \
           ;
-          kubectl rollout restart deployment/pgsql-backup-test

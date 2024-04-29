@@ -19,7 +19,7 @@ fi
 
 echo "Backup start at $(date)"
 
-pg_dump -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$DB_NAME" | xz -9e > "$FILENAME"
+pg_dump -v -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$DB_NAME" | xz -9e > "$FILENAME"
 echo "Backup created with size $(du -h "$FILENAME" | awk '{print $1}')"
 
 # name `cloudflare` comes from env variables names RCLONE_CONFIG_CLOUDFLARE_*
