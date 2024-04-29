@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "pgsql-backup.fullname" . }}-test
+  labels:
+    {{- include "pgsql-backup.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "pgsql-backup.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "pgsql-backup.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "pgsql-backup.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: creds
+                  key: postgres-password
+          envFrom:
+            - configMapRef:
+                name: {{ include "pgsql-backup.fullname" . }}-env
+            - secretRef:
+                name: {{ include "pgsql-backup.fullname" . }}-secret

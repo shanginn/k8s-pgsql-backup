@@ -1,0 +1,21 @@
+imagePullSecrets:
+  - name: dockerconfigjson-github-com
+
+image:
+  repository: ghcr.io/shanginn/k8s-pgsql-backup
+  pullPolicy: Always
+  tag: latest
+
+serviceAccount:
+  create: true
+  name: "pgsql-backup"
+
+env:
+  PGUSER: postgres
+  PGHOST: pgsql-postgresql
+  PGPORT: "5432"
+
+envSecrets:
+  PGPASSWORD: "" # будет браться из сикрета базы
+  CLOUDFLARE_ACCOUNT_ID: ""
+  CLOUDFLARE_API_TOKEN: ""
