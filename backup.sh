@@ -23,6 +23,6 @@ pg_dump -v -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$DB_NAME" | xz -9e > "$FIL
 echo "Backup created with size $(du -h "$FILENAME" | awk '{print $1}')"
 
 # name `cloudflare` comes from env variables names RCLONE_CONFIG_CLOUDFLARE_*
-rclone copy "$FILENAME" cloudflare:"${DB_NAME}/"
+rclone copy "$FILENAME" cloudflare:"${DB_NAME}/" --s3-upload-concurrency 2
 
 echo "Backup complete at $(date)"
