@@ -19,10 +19,15 @@ fi
 
 echo "Backup start at $(date)"
 
-pg_dump -v -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$DB_NAME" | xz -9e > "$FILENAME"
+pg_dump -v -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$DB_NAME" --exclude-table=generation_text_to_images | xz -9e > "$FILENAME"
 echo "Backup created with size $(du -h "$FILENAME" | awk '{print $1}')"
 
+if [ ! -f "$FILENAME" ]; then
+    echo "Backup file not found. Exiting."
+    exit 1
+fi
+
 # name `cloudflare` comes from env variables names RCLONE_CONFIG_CLOUDFLARE_*
-rclone copy "$FILENAME" cloudflare:"${DB_NAME}/" --s3-upload-concurrency 2
+rclone copy "$FILENAME" cloudflare:"${DB_NAME}/"
 
 echo "Backup complete at $(date)"
