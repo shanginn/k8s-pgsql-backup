@@ -11,23 +11,58 @@ export RCLONE_CONFIG_CLOUDFLARE_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cl
 
 DB_NAME=$1
 FILENAME="$(date +%Y-%m-%d_%H_%M).xz"
+KEEP_BACKUPS=50 # Number of backups to keep
 
 if [ -z "$DB_NAME" ]; then
     echo "No database name provided. Exiting."
     exit 1
 fi
 
-echo "Backup start at $(date)"
+# Ensure required environment variables are set
+: "${CLOUDFLARE_ACCOUNT_ID:?CLOUDFLARE_ACCOUNT_ID environment variable not set.}"
+: "${CLOUDFLARE_ACCESS_KEY_ID:?CLOUDFLARE_ACCESS_KEY_ID environment variable not set.}"
+: "${CLOUDFLARE_SECRET_ACCESS_KEY:?CLOUDFLARE_SECRET_ACCESS_KEY environment variable not set.}"
+: "${PGHOST:?PGHOST environment variable not set.}"
+: "${PGPORT:?PGPORT environment variable not set.}"
+: "${PGUSER:?PGUSER environment variable not set.}"
+# PGPASSWORD is read automatically by pg_dump if set as an environment variable
+
+echo "Backup start at $(date) for database '$DB_NAME'"
 
 pg_dump -v -h "$PGHOST" -p "$PGPORT" -U "$PGUSER" -d "$DB_NAME" --exclude-table=generation_text_to_images | xz -9e > "$FILENAME"
-echo "Backup created with size $(du -h "$FILENAME" | awk '{print $1}')"
+BACKUP_SIZE=$(du -h "$FILENAME" | awk '{print $1}')
+echo "Local backup created: $FILENAME with size $BACKUP_SIZE"
 
-if [ ! -f "$FILENAME" ]; then
-    echo "Backup file not found. Exiting."
+if [ ! -s "$FILENAME" ]; then
+    echo "Backup file $FILENAME is empty or does not exist. Exiting."
+    rm -f "$FILENAME" # Clean up empty file
     exit 1
 fi
 
-# name `cloudflare` comes from env variables names RCLONE_CONFIG_CLOUDFLARE_*
-rclone copy "$FILENAME" cloudflare:"${DB_NAME}/"
+# --- Upload Backup ---
+REMOTE_PATH="cloudflare:${DB_NAME}/"
+echo "Uploading $FILENAME to $REMOTE_PATH"
+rclone copy "$FILENAME" "$REMOTE_PATH"
+echo "Upload complete."
 
-echo "Backup complete at $(date)"
+# Clean up local file
+rm "$FILENAME"
+echo "Local backup file $FILENAME removed."
+
+# --- Cleanup Old Backups ---
+echo "Cleaning up old backups in $REMOTE_PATH, keeping the latest $KEEP_BACKUPS..."
+
+# List files, sort reverse (newest first), skip the newest N, feed the rest to delete
+files_to_delete=$(rclone lsf --format p "$REMOTE_PATH" | sort -r | tail -n +$((KEEP_BACKUPS + 1)))
+
+if [ -z "$files_to_delete" ]; then
+  echo "No old backups found to delete."
+else
+  echo "Found the following old backups to delete:"
+  echo "$files_to_delete"
+  # Use --files-from with stdin (-) to delete listed files efficiently
+  echo "$files_to_delete" | rclone delete --files-from - "$REMOTE_PATH"
+  echo "Old backups deleted."
+fi
+
+echo "Backup process complete at $(date)"
