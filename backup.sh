@@ -7,11 +7,10 @@ export RCLONE_CONFIG_CLOUDFLARE_REGION=auto
 export RCLONE_CONFIG_CLOUDFLARE_ACL=private
 export RCLONE_CONFIG_CLOUDFLARE_ACCESS_KEY_ID=$CLOUDFLARE_ACCESS_KEY_ID
 export RCLONE_CONFIG_CLOUDFLARE_SECRET_ACCESS_KEY=$CLOUDFLARE_SECRET_ACCESS_KEY
-export RCLONE_CONFIG_CLOUDFLARE_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com/pgsql-backup"
+export RCLONE_CONFIG_CLOUDFLARE_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
 
 DB_NAME=$1
 FILENAME="$(date +%Y-%m-%d_%H_%M).xz"
-KEEP_BACKUPS=50 # Number of backups to keep
 
 if [ -z "$DB_NAME" ]; then
     echo "No database name provided. Exiting."
@@ -25,7 +24,6 @@ fi
 : "${PGHOST:?PGHOST environment variable not set.}"
 : "${PGPORT:?PGPORT environment variable not set.}"
 : "${PGUSER:?PGUSER environment variable not set.}"
-# PGPASSWORD is read automatically by pg_dump if set as an environment variable
 
 echo "Backup start at $(date) for database '$DB_NAME'"
 
@@ -40,7 +38,7 @@ if [ ! -s "$FILENAME" ]; then
 fi
 
 # --- Upload Backup ---
-REMOTE_PATH="cloudflare:${DB_NAME}/"
+REMOTE_PATH="cloudflare:pgsql-backup/${DB_NAME}/"
 echo "Uploading $FILENAME to $REMOTE_PATH"
 rclone copy "$FILENAME" "$REMOTE_PATH"
 echo "Upload complete."
@@ -50,19 +48,9 @@ rm "$FILENAME"
 echo "Local backup file $FILENAME removed."
 
 # --- Cleanup Old Backups ---
-echo "Cleaning up old backups in $REMOTE_PATH, keeping the latest $KEEP_BACKUPS..."
+echo "Cleaning up old backups in $REMOTE_PATH"
 
-# List files, sort reverse (newest first), skip the newest N, feed the rest to delete
-files_to_delete=$(rclone lsf --format p "$REMOTE_PATH" | sort -r | tail -n +$((KEEP_BACKUPS + 1)))
-
-if [ -z "$files_to_delete" ]; then
-  echo "No old backups found to delete."
-else
-  echo "Found the following old backups to delete:"
-  echo "$files_to_delete"
-  # Use --files-from with stdin (-) to delete listed files efficiently
-  echo "$files_to_delete" | rclone delete --files-from - "$REMOTE_PATH"
-  echo "Old backups deleted."
-fi
+rclone delete "$REMOTE_PATH" --min-age 10d
+echo "Old backups deleted."
 
 echo "Backup process complete at $(date)"
