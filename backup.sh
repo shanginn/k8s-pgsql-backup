@@ -7,7 +7,8 @@ export RCLONE_CONFIG_CLOUDFLARE_REGION=auto
 export RCLONE_CONFIG_CLOUDFLARE_ACL=private
 export RCLONE_CONFIG_CLOUDFLARE_ACCESS_KEY_ID=$CLOUDFLARE_ACCESS_KEY_ID
 export RCLONE_CONFIG_CLOUDFLARE_SECRET_ACCESS_KEY=$CLOUDFLARE_SECRET_ACCESS_KEY
-export RCLONE_CONFIG_CLOUDFLARE_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+export BASE_ENDPOINT="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+export RCLONE_CONFIG_CLOUDFLARE_ENDPOINT="$BASE_ENDPOINT/pgsql-backup"
 
 DB_NAME=$1
 FILENAME="$(date +%Y-%m-%d_%H_%M).xz"
@@ -38,7 +39,7 @@ if [ ! -s "$FILENAME" ]; then
 fi
 
 # --- Upload Backup ---
-REMOTE_PATH="cloudflare:pgsql-backup/${DB_NAME}/"
+REMOTE_PATH="cloudflare:${DB_NAME}/"
 echo "Uploading $FILENAME to $REMOTE_PATH"
 rclone copy "$FILENAME" "$REMOTE_PATH"
 echo "Upload complete."
@@ -48,6 +49,8 @@ rm "$FILENAME"
 echo "Local backup file $FILENAME removed."
 
 # --- Cleanup Old Backups ---
+export RCLONE_CONFIG_CLOUDFLARE_ENDPOINT="$BASE_ENDPOINT"
+REMOTE_PATH="cloudflare:pgsql-backup/${DB_NAME}/"
 echo "Cleaning up old backups in $REMOTE_PATH"
 
 rclone delete "$REMOTE_PATH" --min-age 10d
